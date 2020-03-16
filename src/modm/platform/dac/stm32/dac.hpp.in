@@ -1,0 +1,206 @@
+/*
+ * Copyright (c) 2013-2014, Kevin Läufer
+ * Copyright (c) 2013-2018, Niklas Hauser
+ * Copyright (c) 2016, Fabian Greif
+ *
+ * This file is part of the modm project.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+// ----------------------------------------------------------------------------
+
+#ifndef MODM_STM32_DAC{{ id }}_HPP
+#define MODM_STM32_DAC{{ id }}_HPP
+
+#include <stdint.h>
+#include "../device.hpp"
+#include <modm/architecture/interface/dac.hpp>
+#include <modm/architecture/interface/register.hpp>
+#include <modm/platform/gpio/connector.hpp>
+
+namespace modm
+{
+
+namespace platform
+{
+
+/**
+ * Digital/Analog-Converter module (DAC{{ id }}).
+ *
+ * The {{resolution}}-bit DAC is a successive approximation analog-to-digital
+ * converter. It has up to 18 multiplexed channels allowing it to measure
+ * signals from 16 external and two internal sources.
+ * The result of the DAC is stored in a left-aligned or right-aligned
+ * 16-bit data register.
+ *
+ * @author	Stephan Kugelmann
+ * @author	David Hebbeker
+ * @author	ekiwi
+ * @ingroup	modm_platform_dac modm_platform_dac_{{id}}
+ */
+class Dac{{ id }} : public modm::Dac
+{
+public:
+	static constexpr uint8_t Resolution = {{ resolution }};
+
+public:
+	/**
+	 * Channels, which can be used with this DAC.
+	 *
+	 * There are two channels available per DAC.
+	 */
+	enum class
+	Channel : uint8_t	// TODO: What is the best type?
+	{
+%% for channel in channels
+		Channel{{ channel }} = {{ channel }},
+%% endfor
+%#
+	};
+
+private:
+	/**
+	 * Programmable prescaler to divide the APB2 clock frequency, which
+	 * is used for the analog circuitry (not the digital interface which
+	 * is used for registers).
+	 */
+	enum class
+	Prescaler : uint8_t
+	{
+		Div2 = 0b00,	///< PCLK2 divided by 2
+		Div4 = 0b01,	///< PCLK2 divided by 4
+		Div6 = 0b10,	///< PCLK2 divided by 6
+		Div8 = 0b11		///< PCLK2 divided by 8
+	};
+
+public:
+
+	/**
+	 * Possible interrupts.
+	 *
+	 * An interrupt can be produced on the end of conversion for regular
+	 * and injected groups, when the analog watchdog status bit is set
+	 * and when the overrun status bit is set.
+	 */
+	enum class
+	Interrupt : uint32_t
+	{
+		/// Analog watchdog status bit is set
+		AnalogWatchdog			= DAC_CR1_AWDIE,
+		/// End of conversion of a regular group
+		EndOfRegularConversion	= DAC_CR1_EOCIE,
+		/// End of conversion of an injected group
+		EndOfInjectedConversion	= DAC_CR1_JEOCIE,
+%% if target["family"] in ["f2", "f4", "f7"]
+		/// Overrun (if data are lost)
+		Overrun					= ,
+%% endif
+	};
+	MODM_FLAGS32(Interrupt);
+
+
+public:
+	// start inherited documentation
+	/**
+	 *
+%% if target["family"] in ["f4", "f7"]
+	 * The DAC clock must not exceed 36 MHz for Vdd > 2.4V, or 18MHz for Vdd < 2.4V.
+%% else
+	 * The DAC clock must not exceed 14 MHz.
+%% endif
+	 */
+	template< class SystemClock, frequency_t frequency=MHz(10), percent_t tolerance=pct(10) >
+	static void
+	initialize();
+
+	static inline void
+	disable();
+
+	static inline uint16_t
+	setValue();
+
+
+	/**
+	 * Analog channel selection.
+	 *
+	 * @param channel		The channel which shall be read.
+	 *
+	 * @pre The DAC clock must be started and the DAC switched on with
+	 * 		initialize()
+	 */
+	static inline bool
+	setChannel(const Channel channel);
+
+	static inline Channel
+	getChannel();
+
+	static inline void
+	setLeftAdjustSet();
+
+	static inline void
+	setRightAdjustSet();
+
+	static inline void
+	enableInterruptVector(const uint32_t priority, const bool enable = true);
+
+	/**
+	 * @param priority Priority to set
+	 * @param interrupt The interrupt, which shall be enabled. See
+	 * 	Interrupt for available interrupts.
+	 */
+	static inline void
+	enableInterrupt(const Interrupt_t interrupt);
+
+	/**
+	 * Disables the DAC Conversion Complete Interrupt.
+	 */
+	static inline void
+	disableInterrupt(const Interrupt_t interrupt);
+
+
+	/**
+	 * Returns if the the interrupt flags set.
+	 *
+	 * @pre The DAC clock must be started and the DAC switched on with
+	 * 	initialize()
+	 */
+	static inline InterruptFlag_t
+	getInterruptFlags();
+
+	/**
+	 * Clears the specified interrupt flag.
+	 *
+	 * @param flag
+	 * 		The interrupt flag, which shall be cleared.
+	 *
+	 * @pre The DAC clock must be started and the DAC switched on with
+	 * 		initialize().
+	 */
+	static inline void
+	acknowledgeInterruptFlags(const InterruptFlag_t flags);
+
+private:
+	/**
+	 * Select the frequency of the clock to the DAC. The clock is common
+	 * for all the DACs (DAC1, DAC2, DAC3) and all channels.
+	 *
+	 * @pre The DAC clock must be started and the DAC switched on with
+	 * 	initialize()
+	 *
+	 * @param prescaler
+	 * 		The prescaler specifies by which factor the system clock
+	 * 		will be divided.
+	 */
+	static inline void
+	setPrescaler(const Prescaler prescaler = Prescaler::Div8);
+};
+
+} // namespace platform
+
+} // namespace modm
+
+#include "dac_{{ id }}_impl.hpp"
+
+#endif	// MODM_STM32_DAC{{ id }}_HPP
