@@ -60,6 +60,9 @@ public:
 %#
 	};
 
+
+
+
 private:
 	/**
 	 * Programmable prescaler to divide the APB2 clock frequency, which
@@ -111,6 +114,7 @@ public:
 	 * The DAC clock must not exceed 14 MHz.
 %% endif
 	 */
+
 	template< class SystemClock, frequency_t frequency=MHz(10), percent_t tolerance=pct(10) >
 	static void
 	initialize();
@@ -119,7 +123,11 @@ public:
 	disable();
 
 	static inline uint16_t
-	setValue();
+	setWaveformCharacteristics(uint32_t value);
+
+	static inline void
+	dacLoadDataBufferSingle()
+
 
 
 	/**
@@ -137,10 +145,13 @@ public:
 	getChannel();
 
 	static inline void
-	setLeftAdjustSet();
+	setLeftAdjust(const Channel channel,uint16_t data);
 
 	static inline void
-	setRightAdjustSet();
+	setRightAdjust8(const Channel channel,uint16_t data);
+
+	static inline void
+	setRightAdjust12(const Channel channel,uint16_t data);
 
 	static inline void
 	enableInterruptVector(const uint32_t priority, const bool enable = true);
@@ -183,8 +194,7 @@ public:
 
 private:
 	/**
-	 * Select the frequency of the clock to the DAC. The clock is common
-	 * for all the DACs (DAC1, DAC2, DAC3) and all channels.
+	 * Select the frequency of the clock to the DAC.
 	 *
 	 * @pre The DAC clock must be started and the DAC switched on with
 	 * 	initialize()
