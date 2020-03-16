@@ -142,25 +142,19 @@ modm::platform::Dac{{ id }}::enableInterruptVector(const uint32_t priority,
 void
 modm::platform::Dac{{ id }}::enableInterrupt(const Interrupt_t interrupt)
 {
-	DAC{{ per }}->CR1 |= interrupt.value;
 }
 
 void
 modm::platform::Dac{{ id }}::disableInterrupt(const Interrupt_t interrupt)
 {
-	DAC{{ per }}->CR1 &= ~interrupt.value;
 }
 
 modm::platform::Dac{{ id }}::InterruptFlag_t
 modm::platform::Dac{{ id }}::getInterruptFlags()
 {
-	return InterruptFlag_t(DAC{{ per }}->SR);
 }
 
 void
 modm::platform::Dac{{ id }}::acknowledgeInterruptFlags(const InterruptFlag_t flags)
 {
-	// Flags are cleared by writing a one to the flag position.
-	// Writing a zero is ignored.
-	DAC{{ per }}->SR = flags.value;
 }
